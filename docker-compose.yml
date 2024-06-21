@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=mydocker
+      - POSTGRES_USER=mydockeruser
+      - POSTGRES_PASSWORD=password
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  redis:
+    image: redis:alpine
+
+  celery:
+    build: .
+    command: celery -A mydocker worker -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - web
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A mydocker beat -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - web
+      - redis
+
+volumes:
+  postgres_data:
